@@ -1,0 +1,107 @@
+.worksheet-editor {
+    display: flex;
+    height: calc(100vh - 60px);
+    background-color: #f0f0f0;
+}
+
+.editor-sidebar {
+    width: 300px;
+    background: white;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+}
+
+.sidebar-tabs button {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #000000;
+}
+
+.sidebar-tabs button.active {
+    background: #f0f0f0;
+    border-bottom: 2px solid #007bff;
+}
+
+.sidebar-content {
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.template-item {
+    padding: 10px;
+    margin: 5px 0;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #000000;
+}
+
+.template-item:hover {
+    background: #e9ecef;
+    transform: translateY(-1px);
+}
+
+.editor-main {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: auto;
+}
+
+.canvas-container {
+    background: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.content-section {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.ai-content {
+    font-size: 14px;
+}
+
+.content-line {
+    padding: 8px;
+    margin: 4px 0;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: move;
+    color: #000000;
+}
+
+.content-line:hover {
+    background: #e9ecef;
+}
+
+.elements-section button {
+    display: block;
+    width: 100%;
+    margin: 5px 0;
+    padding: 10px;
+    text-align: left;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #000000;
+}
+
+.elements-section button:hover {
+    background: #e9ecef;
+} 

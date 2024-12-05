@@ -1,0 +1,101 @@
+.app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.worksheet-form {
+    max-width: 500px;
+    margin: 0 auto 40px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:disabled {
+    background-color: #ccc;
+}
+
+.worksheets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.worksheet-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    transition: all 0.3s ease;
+}
+
+.worksheet-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.worksheet-card h3 {
+    margin-top: 0;
+}
+
+.worksheet-card button {
+    margin-right: 10px;
+}
+
+.worksheet-content {
+    margin: 15px 0;
+}
+
+.worksheet-content pre {
+    white-space: pre-wrap;
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.worksheet-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.app:has(.worksheet-editor) {
+    padding: 0;
+    max-width: none;
+} 
