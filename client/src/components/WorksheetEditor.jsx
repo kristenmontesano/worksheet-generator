@@ -1,16 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-// import {
-//   ActiveSelection,
-//   Canvas,
-//   Circle,
-//   FabricObject,
-//   FabricText,
-//   Group,
-//   Line,
-//   Polygon,
-//   Rect,
-// } from 'fabric';
 import * as fabric from 'fabric';
 import './WorksheetEditor.css';
 import WorksheetForm from './WorksheetForm';

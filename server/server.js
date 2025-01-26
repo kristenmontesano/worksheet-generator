@@ -7,7 +7,6 @@ import { setupSwagger } from './swagger.js';
 const app = express();
 
 // Middleware
-// add console log to show cors configuration
 app.use(
   cors({
     origin: `http://localhost:${process.env?.CLIENT_PORT || 5173}`,
@@ -15,7 +14,6 @@ app.use(
   })
 );
 
-// add console log to show CORS configuration "Allowed to accept connections from url"
 console.log(
   `Allowed to accept connections from http://localhost:${process.env?.CLIENT_PORT || 5173}`
 );
@@ -181,7 +179,6 @@ Each section must include detailed, actionable content designed for classroom or
     const worksheetContent = parseAndFormatResponse(
       completion.choices[0].message.content
     );
-    // const worksheetContent = completion.choices[0].message.content;
 
     const worksheet = {
       _id: Date.now().toString(),

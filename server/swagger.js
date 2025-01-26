@@ -8,9 +8,9 @@ const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'API Documentation',
+      title: 'API Docs - Worksheet Generator',
       version: '1.0.0',
-      description: 'API endpoints for my Express app',
+      description: 'API endpoints for Worksheet Generator',
     },
     servers: [
       {
@@ -18,7 +18,7 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./routes/*.js'], // Path to your route files for documentation
+  apis: ['./routes/*.js'],
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
