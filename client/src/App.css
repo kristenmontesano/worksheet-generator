@@ -1,101 +1,116 @@
-.app {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    min-height: 100vh;
+:root {
+  --form-gap: 8px; /* Default gap for forms */
+  --form-group-gap: 4px; /* Default gap within form groups */
+  --button-bg-color: #007bff; /* Primary button background color */
+  --button-disabled-bg-color: #ccc; /* Disabled button background color */
+  --form-border-color: #ddd; /* Default form border color */
+  --form-border-radius: 8px; /* Default border radius */
+  --form-padding: 20px; /* Default form padding */
 }
 
-header {
-    text-align: center;
-    margin-bottom: 40px;
+body {
+  font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  line-height: 1.5;
+  padding: 0;
+  margin: 0;
+}
+
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer; /* Changed to pointer for better UX */
+  background-image: url("./assets/caret-down.svg");
+  background-size: 24px;
+  background-repeat: no-repeat;
+  background-position: calc(100% - 8px) center;
+}
+
+button {
+  display: inline-block; /* Prevent buttons from stretching */
+  background-color: var(--button-bg-color);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.app {
+  font-size: clamp(12px, 5vw, 20px);
+  max-width: 100%;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* Headings */
+.app h1 {
+  line-height: 1.2;
+  text-align: center;
 }
 
 .worksheet-form {
-    max-width: 500px;
-    margin: 0 auto 40px;
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+  max-width: 80%;
+  margin: 0 auto 40px;
+  padding: var(--form-padding);
+  border: 1px solid var(--form-border-color);
+  border-radius: var(--form-border-radius);
+  box-sizing: border-box;
+}
+
+.worksheet-form form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-gap); /* Use default form gap */
+}
+
+.worksheet-form button {
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.worksheet-form button:hover {
+  background-image: linear-gradient(rgb(0 0 0/40%) 0 0);
+}
+
+.worksheet-form button:disabled {
+  background-color: var(--button-disabled-bg-color);
+  background-image: unset;
+  cursor: not-allowed; /* Better UX for disabled buttons */
 }
 
 .form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-group-gap); /* Use default group gap */
 }
 
 .form-group input,
 .form-group select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--form-border-color);
+  border-radius: 4px;
+  box-sizing: border-box;
 }
 
-button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+.form-group input:last-child,
+.form-group select:last-child {
+  margin-bottom: 16px;
 }
 
-button:disabled {
-    background-color: #ccc;
-}
+/* Responsive Design */
+@media (max-width: 600px) {
+  :root {
+    --form-gap: 4px; /* Reduce gaps on smaller screens */
+    --form-group-gap: 2px;
+    --form-padding: 15px; /* Reduce padding for forms */
+  }
 
-.worksheets-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+  .worksheet-form {
+    max-width: 100%;
+    padding: var(--form-padding);
+  }
 }
-
-.worksheet-card {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 15px;
-    transition: all 0.3s ease;
-}
-
-.worksheet-card:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.worksheet-card h3 {
-    margin-top: 0;
-}
-
-.worksheet-card button {
-    margin-right: 10px;
-}
-
-.worksheet-content {
-    margin: 15px 0;
-}
-
-.worksheet-content pre {
-    white-space: pre-wrap;
-    background: #f5f5f5;
-    padding: 15px;
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 14px;
-    line-height: 1.6;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.worksheet-actions {
-    margin-top: 15px;
-    display: flex;
-    gap: 10px;
-}
-
-.app:has(.worksheet-editor) {
-    padding: 0;
-    max-width: none;
-} 

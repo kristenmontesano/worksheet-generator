@@ -1,0 +1,32 @@
+{
+  "name": "worksheet-generator",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "start:server": "npm --workspace server run dev",
+    "start:client": "npm --workspace client run start",
+    "lint:server": "eslint ./server",
+    "lint:client": "eslint ./client",
+    "lint:server:fix": "eslint ./server --fix",
+    "lint:client:fix": "eslint ./client --fix",
+    "lint": "concurrently --kill-others-on-fail \"npm:lint:server\" \"npm:lint:client\"",
+    "lint:fix": "concurrently --kill-others-on-fail \"npm:lint:server:fix\" \"npm:lint:client:fix\"",
+    "start": "concurrently --kill-others \"npm:start:server\" \"npm:start:client\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.19.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.18",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2"
+  }
+}
