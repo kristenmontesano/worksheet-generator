@@ -1,107 +1,207 @@
+:root {
+  --sidebar-content-gap: 8px;
+  --sidebar-tab-font-size: clamp(1rem, 2vw, 1.5rem);
+  --content-font-size: clamp(12px, 5vw, 20px);
+  --button-hover-bg: #e9ecef;
+  --card-border-color: #ddd;
+  --content-line-bg: #f8f9fa;
+  --active-tab-color: #007bff;
+  --action-button-color: #007bff;
+  --shadow: var(--shadow)
+}
+
 .worksheet-editor {
-    display: flex;
-    height: calc(100vh - 60px);
-    background-color: #f0f0f0;
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  background-color: #f0f0f0;
 }
 
 .editor-sidebar {
-    width: 300px;
-    background: white;
-    border-right: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
+  width: 30%;
+  height: 100%;
+  background: white;
+  border-right: 1px solid var(--card-border-color);
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-tabs {
-    display: flex;
-    border-bottom: 1px solid #ddd;
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid var(--card-border-color);
 }
 
 .sidebar-tabs button {
-    flex: 1;
-    padding: 12px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #000000;
+  flex: 1;
+  padding: 12px;
+  font-size: var(--sidebar-tab-font-size);
+  background: none;
+  color: #000;
+  border-radius: 0;
+  transition: all 0.3s ease;
+}
+
+.sidebar-tabs button:hover {
+  background: var(--button-hover-bg);
+  transform: translateY(-1px);
 }
 
 .sidebar-tabs button.active {
-    background: #f0f0f0;
-    border-bottom: 2px solid #007bff;
+  background: #f0f0f0;
+  border-bottom: 2.5px solid var(--active-tab-color);
+  box-shadow: 0 4px 6px var(--shadow);
 }
 
 .sidebar-content {
-    padding: 15px;
-    overflow-y: auto;
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sidebar-content-gap);
 }
 
-.template-item {
-    padding: 10px;
-    margin: 5px 0;
-    background: #f8f9fa;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: #000000;
+.sidebar-content h3 {
+  margin: 0;
 }
 
-.template-item:hover {
-    background: #e9ecef;
-    transform: translateY(-1px);
+.sidebar-content > div,
+.sidebar-content > button {
+  padding: 10px;
+  background: var(--content-line-bg);
+  border: 1px solid var(--card-border-color);
+  border-radius: 4px;
+  cursor: alias;
+  transition: all 0.2s;
+  text-align: left;
+  font-size: var(--content-font-size);
+  color: #000;
+}
+
+.sidebar-content > div:hover,
+.sidebar-content > button:hover {
+  background: var(--button-hover-bg);
+  transform: translateY(-1px);
+}
+
+.sidebar-content .actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sidebar-content-gap);
+  border: 0
+}
+
+.sidebar-content .actions > button {
+  background-color: var(--button-bg-color);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.3s ease; /* Smooth color transition */
+  width: 100%;
+  text-align: center; /* Center-align text */
+}
+
+.sidebar-content .actions > button:disabled,
+.sidebar-content .actions > button:disabled:hover {
+  background-image: unset;
+  background-color: var(--button-disabled-bg-color);
+  color: #000;
+  cursor: not-allowed; /* Better UX for disabled buttons */
+}
+
+.sidebar-content .actions > button:hover {
+  background-image:  linear-gradient(rgb(0 0 0/20%) 0 0);
+}
+
+.sidebar-content .actions > button span {
+  display: inline-block;
+  text-overflow: ellipsis; /* Add ellipsis if text is too long */
+}
+
+.sidebar-content > .modal {
+  padding: 0;
+  /* add new box shadow to make form look sunken in */
+  
+}
+.sidebar-content > .modal > .worksheet-form {
+  padding: 0;
+  margin: 0 auto;
+  max-width: 100%;
+  border-radius: 0;
+  border: 0;
+  padding: 1rem;
+  background-color: white;
+  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.1), inset 0 -4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .editor-main {
-    flex: 1;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    overflow: auto;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+  padding: 20px;
 }
 
 .canvas-container {
-    background: white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  background: white;
+  box-shadow: 0 0 10px var(--shadow);
 }
 
-.content-section {
-    height: 100%;
-    overflow-y: auto;
+.canvas-sizer {
+  width: 100%;
+  height: calc(100vh - 40px);
+  padding: 20px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f0f0;
+  box-sizing: border-box;
 }
 
-.ai-content {
-    font-size: 14px;
-}
+/* Responsive Styles */
+@media (max-width: 1150px) {
+  body {
+    line-height: 1;
+  }
 
-.content-line {
-    padding: 8px;
-    margin: 4px 0;
-    background: #f8f9fa;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: move;
-    color: #000000;
-}
+  .app {
+    font-size: clamp(10px, 2vw, 14px);
+  }
 
-.content-line:hover {
-    background: #e9ecef;
-}
-
-.elements-section button {
-    display: block;
+  .worksheet-editor {
+    flex-direction: column;
     width: 100%;
-    margin: 5px 0;
-    padding: 10px;
-    text-align: left;
-    background: #f8f9fa;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    color: #000000;
+    max-width: 100%;
+  }
+
+  .editor-sidebar {
+    width: 100%;
+    height: 20%;
+    border-right: none;
+    border-bottom: 1px solid var(--card-border-color);
+  }
+
+  .sidebar-content h3 {
+    font-size: clamp(0.5rem, 1.5vw, 1rem);
+  }
+
+  .sidebar-tabs button {
+    font-size: clamp(0.5rem, 1.5vw, 1rem);
+  }
+
+  .sidebar-content > div,
+  .sidebar-content > button {
+    font-size: clamp(0.5rem, 1.5vw, 1rem);
+  }
 }
 
-.elements-section button:hover {
-    background: #e9ecef;
-} 
+@media (min-width: 2400px) {
+  .editor-sidebar {
+    width: 20%;
+  }
+}
