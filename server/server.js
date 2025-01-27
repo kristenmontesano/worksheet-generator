@@ -1,11 +1,14 @@
 const express = require('express');
 const cors = require('cors');
+const OpenAI = require('openai');
 require('dotenv').config();
 
-// Import routes
-const apiRouter = require('./routes/api');
-
 const app = express();
+
+// Initialize OpenAI
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
 
 // Middleware
 app.use(cors({
@@ -14,8 +17,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Use API routes
-app.use('/api', apiRouter);
+// Import and use API routes
+const apiRoutes = require('./routes/api');
+app.use('/api', apiRoutes);
 
 const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => {

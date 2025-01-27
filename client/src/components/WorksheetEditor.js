@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fabric } from 'fabric';
 import './WorksheetEditor.css';
+import { FaHome } from 'react-icons/fa';
 
 const TEMPLATE_ELEMENTS = {
     headers: [
@@ -27,6 +28,7 @@ const WorksheetEditor = ({ worksheetData }) => {
     const [canvas, setCanvas] = useState(null);
     const [activeTab, setActiveTab] = useState('layout');
     const [generatedContent, setGeneratedContent] = useState(worksheetData?.content || '');
+    const [worksheetId] = useState(worksheetData?._id);
 
     useEffect(() => {
         const newCanvas = new fabric.Canvas('worksheet-canvas', {
@@ -41,12 +43,19 @@ const WorksheetEditor = ({ worksheetData }) => {
             fontFamily: 'Arial'
         });
 
+        // Load saved state if it exists
+        if (worksheetData?.state) {
+            newCanvas.loadFromJSON(worksheetData.state, () => {
+                newCanvas.renderAll();
+            });
+        }
+
         setCanvas(newCanvas);
 
         return () => {
             newCanvas.dispose();
         };
-    }, []);
+    }, [worksheetData]);
 
     const addText = () => {
         if (!canvas) return;
@@ -272,6 +281,36 @@ const WorksheetEditor = ({ worksheetData }) => {
         canvas.renderAll();
     };
 
+    const handleHomeClick = async () => {
+        if (!canvas) return;
+
+        try {
+            // Convert canvas to JSON
+            const worksheetState = canvas.toJSON();
+            
+            // Save worksheet state
+            await fetch('/api/worksheets/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: worksheetId,
+                    state: worksheetState,
+                    // Add any other relevant data you want to save
+                    lastModified: new Date().toISOString()
+                })
+            });
+
+            // Navigate home after successful save
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Error saving worksheet:', error);
+            // You might want to show an error message to the user here
+            window.location.href = '/';
+        }
+    };
+
     return (
         <div className="worksheet-editor">
             <div className="editor-sidebar">
@@ -364,6 +403,15 @@ const WorksheetEditor = ({ worksheetData }) => {
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleCanvasDrop}
             >
+                <div className="editor-toolbar">
+                    <button 
+                        className="home-button"
+                        onClick={handleHomeClick}
+                        title="Return to Home"
+                    >
+                        <FaHome />
+                    </button>
+                </div>
                 <div className="canvas-container">
                     <canvas id="worksheet-canvas" />
                 </div>

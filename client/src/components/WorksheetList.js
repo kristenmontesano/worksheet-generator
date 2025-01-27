@@ -1,28 +1,48 @@
 import React, { useState } from 'react';
+import { FaEdit, FaDownload, FaEye, FaEyeSlash } from 'react-icons/fa';
 
-const WorksheetList = ({ worksheets }) => {
+const WorksheetList = ({ worksheets, onEditWorksheet }) => {
     const [expandedId, setExpandedId] = useState(null);
 
-    const handleDownload = (worksheet) => {
-        const blob = new Blob([`
+    const handleDownload = async (worksheet) => {
+        try {
+            // Assuming there's an endpoint to get the PDF version
+            const response = await fetch(`http://localhost:5002/api/worksheets/${worksheet._id}/pdf`);
+            if (!response.ok) {
+                // Fallback to text download if PDF isn't available
+                const blob = new Blob([`
 ${worksheet.title}
 Grade: ${worksheet.grade}
 Subject: ${worksheet.subject}
 Date: ${new Date(worksheet.createdAt).toLocaleDateString()}
 
 ${worksheet.content}
-        `], { type: 'text/plain' });
+                `], { type: 'text/plain' });
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${worksheet.title.replace(/\s+/g, '_')}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                return;
+            }
 
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${worksheet.title.replace(/\s+/g, '_')}.txt`;
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${worksheet.title.replace(/\s+/g, '_')}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading worksheet:', error);
+            alert('Failed to download worksheet');
+        }
     };
 
     const toggleExpand = (id) => {
@@ -38,24 +58,51 @@ ${worksheet.content}
                 <div className="worksheets-grid">
                     {worksheets.map((worksheet) => (
                         <div key={worksheet._id} className="worksheet-card">
-                            <h3>{worksheet.title}</h3>
-                            <p>Subject: {worksheet.subject}</p>
-                            <p>Grade: {worksheet.grade}</p>
-                            <p>Created: {new Date(worksheet.createdAt).toLocaleDateString()}</p>
+                            <div className="worksheet-header">
+                                <h3>{worksheet.title}</h3>
+                                <div className="worksheet-meta">
+                                    <span>Subject: {worksheet.subject}</span>
+                                    <br />
+                                    <span>Grade: {worksheet.grade}</span>
+                                    <br />
+                                    <span>Created: {new Date(worksheet.createdAt).toLocaleDateString()}</span>
+                                </div>
+                            </div>
                             
                             <div className="worksheet-content">
                                 {expandedId === worksheet._id ? (
                                     <>
                                         <pre>{worksheet.content}</pre>
-                                        <button onClick={() => toggleExpand(worksheet._id)}>Show Less</button>
+                                        <button 
+                                            className="preview-button"
+                                            onClick={() => toggleExpand(worksheet._id)}
+                                        >
+                                            <FaEyeSlash /> Hide Preview
+                                        </button>
                                     </>
                                 ) : (
-                                    <button onClick={() => toggleExpand(worksheet._id)}>Preview Content</button>
+                                    <button 
+                                        className="preview-button"
+                                        onClick={() => toggleExpand(worksheet._id)}
+                                    >
+                                        <FaEye /> Preview Content
+                                    </button>
                                 )}
                             </div>
                             
                             <div className="worksheet-actions">
-                                <button onClick={() => handleDownload(worksheet)}>Download</button>
+                                <button 
+                                    className="edit-button"
+                                    onClick={() => onEditWorksheet(worksheet)}
+                                >
+                                    <FaEdit /> Edit
+                                </button>
+                                <button 
+                                    className="download-button"
+                                    onClick={() => handleDownload(worksheet)}
+                                >
+                                    <FaDownload /> Download
+                                </button>
                             </div>
                         </div>
                     ))}
