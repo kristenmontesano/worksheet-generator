@@ -134,9 +134,12 @@
     top: 20px;
     right: 20px;
     z-index: 100;
+    display: flex;
+    gap: 10px;
 }
 
-.home-button {
+.home-button,
+.download-button {
     padding: 8px;
     background: #007bff;
     border: none;
@@ -149,6 +152,7 @@
     font-size: 20px;
 }
 
-.home-button:hover {
+.home-button:hover,
+.download-button:hover {
     background: #0056b3;
 } 

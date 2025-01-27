@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { fabric } from 'fabric';
 import './WorksheetEditor.css';
-import { FaHome } from 'react-icons/fa';
+import { FaHome, FaDownload } from 'react-icons/fa';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const TEMPLATE_ELEMENTS = {
     headers: [
@@ -311,6 +313,52 @@ const WorksheetEditor = ({ worksheetData }) => {
         }
     };
 
+    const handleDownloadPDF = async () => {
+        if (!canvas) return;
+
+        try {
+            // Deselect all objects before generating PDF
+            canvas.discardActiveObject();
+            canvas.renderAll();
+
+            // Get the canvas DOM element
+            const canvasElement = document.getElementById('worksheet-canvas');
+            
+            // Convert the canvas to an image
+            const canvasImage = await html2canvas(canvasElement);
+            
+            // Create PDF document
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'px',
+                format: [canvas.width, canvas.height]
+            });
+
+            // Add the image to the PDF
+            pdf.addImage(
+                canvasImage.toDataURL('image/png'),
+                'PNG',
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+            // Download the PDF
+            pdf.save('worksheet.pdf');
+
+            // Optionally: Restore the last selected object
+            const lastActiveObject = canvas.getActiveObject();
+            if (lastActiveObject) {
+                canvas.setActiveObject(lastActiveObject);
+                canvas.renderAll();
+            }
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            // You might want to show an error message to the user here
+        }
+    };
+
     return (
         <div className="worksheet-editor">
             <div className="editor-sidebar">
@@ -410,6 +458,13 @@ const WorksheetEditor = ({ worksheetData }) => {
                         title="Return to Home"
                     >
                         <FaHome />
+                    </button>
+                    <button 
+                        className="download-button"
+                        onClick={handleDownloadPDF}
+                        title="Download as PDF"
+                    >
+                        <FaDownload />
                     </button>
                 </div>
                 <div className="canvas-container">

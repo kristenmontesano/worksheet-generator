@@ -97,12 +97,12 @@ ${worksheet.content}
                                 >
                                     <FaEdit /> Edit
                                 </button>
-                                <button 
+                                {/* <button 
                                     className="download-button"
                                     onClick={() => handleDownload(worksheet)}
                                 >
                                     <FaDownload /> Download
-                                </button>
+                                </button> */}
                             </div>
                         </div>
                     ))}
