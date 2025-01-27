@@ -23,6 +23,9 @@ const TEMPLATE_ELEMENTS = {
         { name: 'Circle' },
         { name: 'Answer Lines' },
         { name: 'Name & Date' }
+    ],
+    buttons: [
+        { name: 'Auto-create Layout' }
     ]
 };
 
@@ -254,43 +257,78 @@ const WorksheetEditor = ({ worksheetData }) => {
         }
     };
 
-    // Add new helper function to detect and group multiple choice questions
+    // Replace the parseContent function
     const parseContent = (content) => {
         const lines = content.split('\n').filter(line => line.trim());
         const parsedContent = [];
         let currentQuestion = null;
 
         lines.forEach(line => {
-            // Detect question pattern (e.g., "1.", "Q1.", "Question 1:")
-            const questionStart = line.match(/^(?:\d+\.|Q\d+\.|Question \d+:)/);
-            // Detect answer choice pattern (e.g., "a)", "A)", "(a)", "(A)")
-            const choiceStart = line.match(/^[[(]?[a-dA-D][)\].]?\s/);
-
-            if (questionStart) {
-                // If there was a previous question, add it to parsed content
-                if (currentQuestion) {
-                    parsedContent.push(currentQuestion);
-                }
-                // Start new question
-                currentQuestion = {
-                    type: 'multiple-choice',
-                    question: line,
-                    choices: []
-                };
-            } else if (choiceStart && currentQuestion) {
-                // Add choice to current question
-                currentQuestion.choices.push(line);
-            } else {
-                // If not part of a multiple choice question, add as regular content
+            const trimmedLine = line.trim();
+            
+            // Match numbered questions and their types
+            const questionMatch = trimmedLine.match(/^\d+\.\s*(.*?)$/i);
+            const isLetterOption = trimmedLine.match(/^[a-d]\.\s+\w+/i);
+            const isMatchingAnswer = trimmedLine.match(/^[A-D]{2}\.\s+\w+/);
+            
+            if (questionMatch) {
+                // If there was a previous question, add it
                 if (currentQuestion) {
                     parsedContent.push(currentQuestion);
                     currentQuestion = null;
                 }
-                parsedContent.push({ type: 'text', content: line });
+                
+                const questionText = questionMatch[1].trim();
+                
+                // Check if this is a multiple choice or matching question
+                if (questionText.toLowerCase().includes('multiple choice') || 
+                    questionText.toLowerCase().includes('matching')) {
+                    // Start a new grouped question
+                    currentQuestion = {
+                        type: questionText.toLowerCase().includes('matching') ? 'matching' : 'multiple-choice',
+                        question: trimmedLine,
+                        choices: [],
+                        answers: []
+                    };
+                } else {
+                    // Regular question
+                    currentQuestion = {
+                        type: 'text',
+                        content: trimmedLine
+                    };
+                }
+            } else if (isLetterOption && currentQuestion) {
+                // Add choice to current multiple choice or matching question
+                currentQuestion.choices.push(trimmedLine);
+            } else if (isMatchingAnswer && currentQuestion?.type === 'matching') {
+                // Add matching answer (AA., BB., etc.)
+                currentQuestion.answers.push(trimmedLine);
+            } else if (trimmedLine) {
+                // If there's a current question and this line isn't a choice/answer,
+                // append it to the question content
+                if (currentQuestion) {
+                    if (currentQuestion.type === 'text') {
+                        // For regular questions, combine with ": " if it's just the question type
+                        if (currentQuestion.content.toLowerCase().match(/(multiple choice|matching|short answer|long answer|challenge question)$/i)) {
+                            currentQuestion.content += ': ' + trimmedLine;
+                        } else if (!currentQuestion.content.includes('\n')) {
+                            currentQuestion.content += '\n' + trimmedLine;
+                        }
+                    } else if (!currentQuestion.question.includes('\n')) {
+                        // For multiple choice/matching, add as new line to question
+                        currentQuestion.question += '\n' + trimmedLine;
+                    }
+                } else {
+                    // If no current question, create new text content
+                    parsedContent.push({
+                        type: 'text',
+                        content: trimmedLine
+                    });
+                }
             }
         });
 
-        // Add final question if exists
+        // Add the last question if exists
         if (currentQuestion) {
             parsedContent.push(currentQuestion);
         }
@@ -368,31 +406,7 @@ const WorksheetEditor = ({ worksheetData }) => {
     const handleHomeClick = async () => {
         if (!canvas) return;
 
-        try {
-            // Convert canvas to JSON
-            const worksheetState = canvas.toJSON();
-            
-            // Save worksheet state
-            await fetch('/api/worksheets/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    id: worksheetId,
-                    state: worksheetState,
-                    // Add any other relevant data you want to save
-                    lastModified: new Date().toISOString()
-                })
-            });
-
-            // Navigate home after successful save
-            window.location.href = '/';
-        } catch (error) {
-            console.error('Error saving worksheet:', error);
-            // You might want to show an error message to the user here
-            window.location.href = '/';
-        }
+        window.location.href = '/';
     };
 
     const handleDownloadPDF = async () => {
@@ -441,7 +455,7 @@ const WorksheetEditor = ({ worksheetData }) => {
         }
     };
 
-    // Update the content section render to handle grouped multiple choice questions
+    // Replace the renderContentSection function
     const renderContentSection = () => {
         const parsedContent = parseContent(generatedContent);
         
@@ -457,7 +471,7 @@ const WorksheetEditor = ({ worksheetData }) => {
                                     e.dataTransfer.setData('text', JSON.stringify(item));
                                 }}
                             >
-                                {item.type === 'multiple-choice' ? (
+                                {item.type === 'multiple-choice' || item.type === 'matching' ? (
                                     <div className="multiple-choice-item">
                                         <div>{item.question}</div>
                                         {item.choices.map((choice, j) => (
@@ -465,6 +479,13 @@ const WorksheetEditor = ({ worksheetData }) => {
                                                 {choice}
                                             </div>
                                         ))}
+                                        {item.type === 'matching' && item.answers && (
+                                            item.answers.map((answer, j) => (
+                                                <div key={`answer-${j}`} className="choice-item">
+                                                    {answer}
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 ) : (
                                     item.content
@@ -473,8 +494,12 @@ const WorksheetEditor = ({ worksheetData }) => {
                             <button 
                                 className="copy-button"
                                 onClick={() => {
-                                    const textToCopy = item.type === 'multiple-choice' 
-                                        ? [item.question, ...item.choices].join('\n')
+                                    const textToCopy = item.type === 'multiple-choice' || item.type === 'matching'
+                                        ? [
+                                            item.question, 
+                                            ...item.choices,
+                                            ...(item.type === 'matching' && item.answers ? item.answers : [])
+                                        ].join('\n')
                                         : item.content;
                                     navigator.clipboard.writeText(textToCopy);
                                 }}
@@ -487,6 +512,113 @@ const WorksheetEditor = ({ worksheetData }) => {
                 </div>
             </div>
         );
+    };
+
+    // Update the autoCreateLayout function
+    const autoCreateLayout = () => {
+        if (!canvas || !worksheetData) return;
+
+        // Clear existing canvas
+        canvas.clear();
+
+        // Add Name & Date at the top
+        addShape('Name & Date');
+
+        // Add title
+        const title = new fabric.Textbox(worksheetData.title || 'Worksheet', {
+            left: 50,
+            top: 100,
+            width: canvas.width - 100,
+            fontSize: 24,
+            fontFamily: 'Arial',
+            fontWeight: 'bold',
+            textAlign: 'center'
+        });
+        canvas.add(title);
+
+        // Parse and add content
+        const parsedContent = parseContent(generatedContent);
+        let currentTop = 160;
+
+        parsedContent.forEach((item) => {
+            if (item.type === 'multiple-choice' || item.type === 'matching') {
+                // Create grouped question (multiple choice or matching)
+                const questionText = new fabric.Textbox(item.question, {
+                    left: 50,
+                    top: 0,
+                    width: canvas.width - 100,
+                    fontSize: 14,
+                    fontFamily: 'Arial'
+                });
+
+                const elements = [questionText];
+                let currentHeight = questionText.height;
+
+                // Add choices
+                item.choices.forEach((choice, idx) => {
+                    const choiceText = new fabric.Textbox(choice, {
+                        left: 70,
+                        top: currentHeight + (idx * 25),
+                        width: (canvas.width - 100) / 2 - 20, // Half width for matching
+                        fontSize: 14,
+                        fontFamily: 'Arial'
+                    });
+                    elements.push(choiceText);
+                });
+
+                // Add matching answers if they exist
+                if (item.type === 'matching' && item.answers) {
+                    item.answers.forEach((answer, idx) => {
+                        const answerText = new fabric.Textbox(answer, {
+                            left: canvas.width / 2,
+                            top: questionText.height + (idx * 25),
+                            width: (canvas.width - 100) / 2 - 20,
+                            fontSize: 14,
+                            fontFamily: 'Arial'
+                        });
+                        elements.push(answerText);
+                    });
+                }
+
+                const group = new fabric.Group(elements, {
+                    left: 50,
+                    top: currentTop
+                });
+
+                canvas.add(group);
+                currentTop += group.height + 30;
+
+            } else {
+                // Add regular question text
+                const text = new fabric.Textbox(item.content, {
+                    left: 50,
+                    top: currentTop,
+                    width: canvas.width - 100,
+                    fontSize: 14,
+                    fontFamily: 'Arial'
+                });
+                canvas.add(text);
+                currentTop += text.height + 15;
+
+                // Add answer box for non-multiple choice/matching questions
+                const isLongAnswer = item.content.toLowerCase().includes('long answer');
+                const boxHeight = isLongAnswer ? 120 : 60;
+
+                const answerBox = new fabric.Rect({
+                    left: 50,
+                    top: currentTop,
+                    width: canvas.width - 100,
+                    height: boxHeight,
+                    fill: 'transparent',
+                    stroke: '#000',
+                    strokeWidth: 1
+                });
+                canvas.add(answerBox);
+                currentTop += boxHeight + 30;
+            }
+        });
+
+        canvas.renderAll();
     };
 
     return (
@@ -516,6 +648,12 @@ const WorksheetEditor = ({ worksheetData }) => {
                 <div className="sidebar-content">
                     {activeTab === 'layout' && (
                         <div className="template-section">
+                            <button 
+                                className="auto-create-button"
+                                onClick={autoCreateLayout}
+                            >
+                                Auto-create Layout
+                            </button>
                             <h3>Headers</h3>
                             {TEMPLATE_ELEMENTS.headers.map(header => (
                                 <div 
