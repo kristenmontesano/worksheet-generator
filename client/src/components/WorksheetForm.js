@@ -32,7 +32,7 @@ const WorksheetForm = ({ onWorksheetCreated }) => {
 
     return (
         <div className="worksheet-form">
-            <h2>Create New Worksheet</h2>
+            <h2>Create New Worksheet Content</h2>
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label>Subject:</label>
@@ -71,7 +71,7 @@ const WorksheetForm = ({ onWorksheetCreated }) => {
                     </select>
                 </div>
                 <button type="submit" disabled={loading}>
-                    {loading ? 'Generating...' : 'Generate Worksheet'}
+                    {loading ? 'Generating...' : 'Generate Content'}
                 </button>
             </form>
         </div>

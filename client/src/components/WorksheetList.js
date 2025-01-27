@@ -51,7 +51,7 @@ ${worksheet.content}
 
     return (
         <div className="worksheet-list">
-            <h2>Your Worksheets</h2>
+            <h2>Your Worksheet Content</h2>
             {worksheets.length === 0 ? (
                 <p>No worksheets created yet.</p>
             ) : (
@@ -95,7 +95,7 @@ ${worksheet.content}
                                     className="edit-button"
                                     onClick={() => onEditWorksheet(worksheet)}
                                 >
-                                    <FaEdit /> Edit
+                                    <FaEdit /> Create Worksheet
                                 </button>
                                 {/* <button 
                                     className="download-button"
