@@ -22,6 +22,7 @@ exports.generateWorksheet = async (req, res) => {
                 2. 3-4 main exercises or problems (short response, matching, or multiple choice)
                 3. 1-2 long answer questions (1 paragraph response)
                 4. 1 challenge question (short response or multiple choice)
+                Include only the content in your response, no formatting or question types.
                 Format with clear sections and numbering.
                 Ensure the worksheet is appropriate for the grade level and subject. Consider the Common Core State Standards for each grade level.`
             }]

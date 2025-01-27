@@ -89,8 +89,14 @@
 .content-line {
     flex: 1;
     cursor: grab;
-    padding: 8px;
+    padding: 4px;
+    border: 1px solid transparent;
     color: #000000;
+}
+
+.content-line:hover {
+    border-color: #ddd;
+    background-color: #f9f9f9;
 }
 
 .copy-button {
@@ -155,4 +161,17 @@
 .home-button:hover,
 .download-button:hover {
     background: #0056b3;
+}
+
+.multiple-choice-item {
+    padding: 8px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.choice-item {
+    margin-left: 20px;
+    margin-top: 4px;
+    color: #444;
 } 

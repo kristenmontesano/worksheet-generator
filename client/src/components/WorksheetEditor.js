@@ -254,32 +254,114 @@ const WorksheetEditor = ({ worksheetData }) => {
         }
     };
 
-    // Add this function to handle dropping text onto canvas
+    // Add new helper function to detect and group multiple choice questions
+    const parseContent = (content) => {
+        const lines = content.split('\n').filter(line => line.trim());
+        const parsedContent = [];
+        let currentQuestion = null;
+
+        lines.forEach(line => {
+            // Detect question pattern (e.g., "1.", "Q1.", "Question 1:")
+            const questionStart = line.match(/^(?:\d+\.|Q\d+\.|Question \d+:)/);
+            // Detect answer choice pattern (e.g., "a)", "A)", "(a)", "(A)")
+            const choiceStart = line.match(/^[[(]?[a-dA-D][)\].]?\s/);
+
+            if (questionStart) {
+                // If there was a previous question, add it to parsed content
+                if (currentQuestion) {
+                    parsedContent.push(currentQuestion);
+                }
+                // Start new question
+                currentQuestion = {
+                    type: 'multiple-choice',
+                    question: line,
+                    choices: []
+                };
+            } else if (choiceStart && currentQuestion) {
+                // Add choice to current question
+                currentQuestion.choices.push(line);
+            } else {
+                // If not part of a multiple choice question, add as regular content
+                if (currentQuestion) {
+                    parsedContent.push(currentQuestion);
+                    currentQuestion = null;
+                }
+                parsedContent.push({ type: 'text', content: line });
+            }
+        });
+
+        // Add final question if exists
+        if (currentQuestion) {
+            parsedContent.push(currentQuestion);
+        }
+
+        return parsedContent;
+    };
+
+    // Modify the handleCanvasDrop function to handle multiple choice questions
     const handleCanvasDrop = (e) => {
         if (!canvas) return;
         
-        // Get the text content that was dragged
-        const text = e.dataTransfer.getData('text');
+        const data = e.dataTransfer.getData('text');
+        let content;
+        try {
+            content = JSON.parse(data);
+        } catch {
+            content = { type: 'text', content: data };
+        }
         
-        // Calculate drop position relative to canvas
         const canvasEl = canvas.getElement();
         const rect = canvasEl.getBoundingClientRect();
         const dropX = e.clientX - rect.left;
         const dropY = e.clientY - rect.top;
 
-        // Create new text object at drop position
-        const textbox = new fabric.Textbox(text, {
-            left: dropX,
-            top: dropY,
-            width: 300,
-            fontSize: 14,
-            fontFamily: 'Arial',
-            fill: '#000000',
-            backgroundColor: 'transparent'
-        });
+        if (content.type === 'multiple-choice') {
+            // Create group of text objects for question and choices
+            const questionText = new fabric.Textbox(content.question, {
+                left: 0,
+                top: 0,
+                width: 300,
+                fontSize: 14,
+                fontFamily: 'Arial'
+            });
 
-        canvas.add(textbox);
-        canvas.setActiveObject(textbox);
+            // Calculate the height of the question text to properly space the first choice
+            const questionHeight = questionText.height || 25;
+
+            const choiceObjects = content.choices.map((choice, index) => {
+                return new fabric.Textbox(choice, {
+                    left: 20, // Indent choices
+                    top: questionHeight + 10 + (index * 30), // Add 10px padding after question
+                    width: 280,
+                    fontSize: 14,
+                    fontFamily: 'Arial'
+                });
+            });
+
+            const group = new fabric.Group([questionText, ...choiceObjects], {
+                left: dropX,
+                top: dropY,
+                selectable: true
+            });
+
+            canvas.add(group);
+            canvas.setActiveObject(group);
+        } else {
+            // Handle regular text as before
+            const textbox = new fabric.Textbox(content.content, {
+                left: dropX,
+                top: dropY,
+                width: 300,
+                fontSize: 14,
+                fontFamily: 'Arial',
+                fill: '#000000',
+                backgroundColor: 'transparent'
+            });
+
+            canvas.add(textbox);
+            canvas.setActiveObject(textbox);
+        }
+        
         canvas.renderAll();
     };
 
@@ -359,6 +441,54 @@ const WorksheetEditor = ({ worksheetData }) => {
         }
     };
 
+    // Update the content section render to handle grouped multiple choice questions
+    const renderContentSection = () => {
+        const parsedContent = parseContent(generatedContent);
+        
+        return (
+            <div className="content-section">
+                <div className="ai-content">
+                    {parsedContent.map((item, i) => (
+                        <div key={i} className="content-line-container">
+                            <div 
+                                className="content-line"
+                                draggable
+                                onDragStart={(e) => {
+                                    e.dataTransfer.setData('text', JSON.stringify(item));
+                                }}
+                            >
+                                {item.type === 'multiple-choice' ? (
+                                    <div className="multiple-choice-item">
+                                        <div>{item.question}</div>
+                                        {item.choices.map((choice, j) => (
+                                            <div key={j} className="choice-item">
+                                                {choice}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    item.content
+                                )}
+                            </div>
+                            <button 
+                                className="copy-button"
+                                onClick={() => {
+                                    const textToCopy = item.type === 'multiple-choice' 
+                                        ? [item.question, ...item.choices].join('\n')
+                                        : item.content;
+                                    navigator.clipboard.writeText(textToCopy);
+                                }}
+                                title="Copy to clipboard"
+                            >
+                                Copy
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="worksheet-editor">
             <div className="editor-sidebar">
@@ -413,36 +543,7 @@ const WorksheetEditor = ({ worksheetData }) => {
                         </div>
                     )}
 
-                    {activeTab === 'content' && (
-                        <div className="content-section">
-                            <div className="ai-content">
-                                {generatedContent.split('\n')
-                                    .filter(line => line.trim())
-                                    .map((line, i) => (
-                                        <div key={i} className="content-line-container">
-                                            <div 
-                                                className="content-line"
-                                                draggable
-                                                onDragStart={(e) => {
-                                                    e.dataTransfer.setData('text', line);
-                                                }}
-                                            >
-                                                {line}
-                                            </div>
-                                            <button 
-                                                className="copy-button"
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(line);
-                                                }}
-                                                title="Copy to clipboard"
-                                            >
-                                                Copy
-                                            </button>
-                                        </div>
-                                    ))}
-                            </div>
-                        </div>
-                    )}
+                    {activeTab === 'content' && renderContentSection()}
                 </div>
             </div>
 
