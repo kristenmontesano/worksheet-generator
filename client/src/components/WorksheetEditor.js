@@ -417,45 +417,64 @@ const WorksheetEditor = ({ worksheetData }) => {
             canvas.discardActiveObject();
             canvas.renderAll();
 
-            // Get the canvas DOM element
-            const canvasElement = document.getElementById('worksheet-canvas');
-            
-            // Convert the canvas to an image
-            const canvasImage = await html2canvas(canvasElement);
-            
-            // Create PDF document
+            const PAGE_HEIGHT = 1100;
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'px',
-                format: [canvas.width, canvas.height]
+                format: [canvas.width, PAGE_HEIGHT]
             });
 
-            // Add the image to the PDF
-            pdf.addImage(
-                canvasImage.toDataURL('image/png'),
-                'PNG',
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
+            // Calculate number of pages
+            const totalHeight = canvas.height;
+            const numPages = Math.ceil(totalHeight / PAGE_HEIGHT);
+
+            // Add each page to the PDF
+            for (let i = 0; i < numPages; i++) {
+                if (i > 0) {
+                    pdf.addPage();
+                }
+
+                // Create a temporary canvas for this page section
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = PAGE_HEIGHT;
+                const ctx = tempCanvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+                // Copy the portion of the main canvas for this page
+                ctx.drawImage(
+                    canvas.getElement(),
+                    0,
+                    PAGE_HEIGHT * i,
+                    canvas.width,
+                    PAGE_HEIGHT,
+                    0,
+                    0,
+                    canvas.width,
+                    PAGE_HEIGHT
+                );
+
+                // Add this page section to the PDF
+                pdf.addImage(
+                    tempCanvas.toDataURL('image/png'),
+                    'PNG',
+                    0,
+                    0,
+                    canvas.width,
+                    PAGE_HEIGHT
+                );
+            }
 
             // Download the PDF
             pdf.save('worksheet.pdf');
 
-            // Optionally: Restore the last selected object
-            const lastActiveObject = canvas.getActiveObject();
-            if (lastActiveObject) {
-                canvas.setActiveObject(lastActiveObject);
-                canvas.renderAll();
-            }
         } catch (error) {
             console.error('Error generating PDF:', error);
-            // You might want to show an error message to the user here
         }
     };
 
-    // Replace the renderContentSection function
+    // Update the content section render to handle grouped multiple choice questions
     const renderContentSection = () => {
         const parsedContent = parseContent(generatedContent);
         
@@ -602,7 +621,7 @@ const WorksheetEditor = ({ worksheetData }) => {
 
                 // Add answer box for non-multiple choice/matching questions
                 const isLongAnswer = item.content.toLowerCase().includes('long answer');
-                const boxHeight = isLongAnswer ? 120 : 60;
+                const boxHeight = isLongAnswer ? 120 : 90;
 
                 const answerBox = new fabric.Rect({
                     left: 50,
