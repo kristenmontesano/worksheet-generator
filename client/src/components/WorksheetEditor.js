@@ -17,7 +17,9 @@ const TEMPLATE_ELEMENTS = {
         { name: 'Answer Box' },
         { name: 'Number Line' },
         { name: 'Grid' },
-        { name: 'Circle' }
+        { name: 'Circle' },
+        { name: 'Answer Lines' },
+        { name: 'Name & Date' }
     ]
 };
 
@@ -93,7 +95,144 @@ const WorksheetEditor = ({ worksheetData }) => {
                 });
                 break;
             case 'Grid':
-                // Add grid implementation
+                // Create a group to hold all grid lines
+                const gridSize = 20; // Size of each grid cell
+                const gridWidth = 200;
+                const gridHeight = 200;
+                const gridLines = [];
+
+                // Create vertical lines
+                for (let i = 0; i <= gridWidth; i += gridSize) {
+                    gridLines.push(new fabric.Line([i, 0, i, gridHeight], {
+                        stroke: '#ccc',
+                        strokeWidth: 1
+                    }));
+                }
+
+                // Create horizontal lines
+                for (let i = 0; i <= gridHeight; i += gridSize) {
+                    gridLines.push(new fabric.Line([0, i, gridWidth, i], {
+                        stroke: '#ccc',
+                        strokeWidth: 1
+                    }));
+                }
+
+                shape = new fabric.Group(gridLines, {
+                    left: 50,
+                    top: 50,
+                    selectable: true
+                });
+                break;
+            case 'Number Line':
+                const lineLength = 300;
+                const tickSpacing = 30;
+                const tickHeight = 10;
+                const numberLine = [];
+
+                // Main horizontal line
+                numberLine.push(new fabric.Line([0, 0, lineLength, 0], {
+                    stroke: '#000',
+                    strokeWidth: 2
+                }));
+
+                // Add ticks and numbers
+                for (let i = 0; i <= lineLength; i += tickSpacing) {
+                    // Tick mark
+                    numberLine.push(new fabric.Line([i, -tickHeight/2, i, tickHeight/2], {
+                        stroke: '#000',
+                        strokeWidth: 1
+                    }));
+                    
+                    // Number label
+                    numberLine.push(new fabric.Text((i/tickSpacing).toString(), {
+                        left: i - 3,
+                        top: tickHeight,
+                        fontSize: 12,
+                        fontFamily: 'Arial'
+                    }));
+                }
+
+                shape = new fabric.Group(numberLine, {
+                    left: 50,
+                    top: 50,
+                    selectable: true
+                });
+                break;
+            case 'Circle':
+                shape = new fabric.Circle({
+                    left: 50,
+                    top: 50,
+                    radius: 50,
+                    fill: 'transparent',
+                    stroke: '#000',
+                    strokeWidth: 1
+                });
+                break;
+            case 'Answer Lines':
+                const lineSpacing = 30; // Space between lines
+                const lineWidth = 300;  // Width of each line
+                const numLines = 4;     // Number of lines to create
+                const answerLines = [];
+
+                // Create multiple horizontal lines
+                for (let i = 0; i < numLines; i++) {
+                    answerLines.push(new fabric.Line([
+                        0,
+                        i * lineSpacing,
+                        lineWidth,
+                        i * lineSpacing
+                    ], {
+                        stroke: '#000',
+                        strokeWidth: 1
+                    }));
+                }
+
+                shape = new fabric.Group(answerLines, {
+                    left: 50,
+                    top: 50,
+                    selectable: true
+                });
+                break;
+            case 'Name & Date':
+                const nameText = new fabric.Text('Name:', {
+                    left: 0,
+                    top: 0,
+                    fontSize: 14,
+                    fontFamily: 'Arial'
+                });
+
+                const nameLine = new fabric.Line([
+                    nameText.width + 10, 
+                    nameText.height - 5,
+                    nameText.width + 300,
+                    nameText.height - 5
+                ], {
+                    stroke: '#000',
+                    strokeWidth: 1
+                });
+
+                const dateText = new fabric.Text('Date:', {
+                    left: nameText.width + 330,
+                    top: 0,
+                    fontSize: 14,
+                    fontFamily: 'Arial'
+                });
+
+                const dateLine = new fabric.Line([
+                    nameText.width + dateText.width + 340,
+                    nameText.height - 5,
+                    nameText.width + dateText.width + 550,
+                    nameText.height - 5
+                ], {
+                    stroke: '#000',
+                    strokeWidth: 1
+                });
+
+                shape = new fabric.Group([nameText, nameLine, dateText, dateLine], {
+                    left: 50,
+                    top: 50,
+                    selectable: true
+                });
                 break;
             default:
                 return;
@@ -190,18 +329,30 @@ const WorksheetEditor = ({ worksheetData }) => {
                     {activeTab === 'content' && (
                         <div className="content-section">
                             <div className="ai-content">
-                                {generatedContent.split('\n').map((line, i) => (
-                                    <div 
-                                        key={i} 
-                                        className="content-line"
-                                        draggable
-                                        onDragStart={(e) => {
-                                            e.dataTransfer.setData('text', line);
-                                        }}
-                                    >
-                                        {line}
-                                    </div>
-                                ))}
+                                {generatedContent.split('\n')
+                                    .filter(line => line.trim())
+                                    .map((line, i) => (
+                                        <div key={i} className="content-line-container">
+                                            <div 
+                                                className="content-line"
+                                                draggable
+                                                onDragStart={(e) => {
+                                                    e.dataTransfer.setData('text', line);
+                                                }}
+                                            >
+                                                {line}
+                                            </div>
+                                            <button 
+                                                className="copy-button"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(line);
+                                                }}
+                                                title="Copy to clipboard"
+                                            >
+                                                Copy
+                                            </button>
+                                        </div>
+                                    ))}
                             </div>
                         </div>
                     )}
