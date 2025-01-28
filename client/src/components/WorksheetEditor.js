@@ -55,9 +55,24 @@ const WorksheetEditor = ({ worksheetData }) => {
             });
         }
 
+        // Add keyboard event listener for delete functionality
+        const handleKeyDown = (e) => {
+            if (e.key === 'Backspace' && newCanvas.getActiveObject()) {
+                e.preventDefault(); // Prevent browser back navigation
+                const activeObjects = newCanvas.getActiveObjects();
+                activeObjects.forEach(obj => newCanvas.remove(obj));
+                newCanvas.discardActiveObject();
+                newCanvas.renderAll();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
         setCanvas(newCanvas);
 
+        // Clean up event listeners when component unmounts
         return () => {
+            document.removeEventListener('keydown', handleKeyDown);
             newCanvas.dispose();
         };
     }, [worksheetData]);
