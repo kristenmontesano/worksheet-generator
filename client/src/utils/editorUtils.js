@@ -1,4 +1,5 @@
 import { fabric } from 'fabric';
+import jsPDF from 'jspdf';
 
 export const TEMPLATE_ELEMENTS = {
     headers: [
@@ -276,4 +277,105 @@ export const createTextbox = (options) => {
         backgroundColor: options.backgroundColor || 'transparent',
         ...options
     });
-}; 
+};
+
+export const createMultipleChoiceGroup = (content, dropX, dropY) => {
+    const questionText = new fabric.Textbox(content.question || '', {
+        left: 0,
+        top: 0,
+        width: 300,
+        fontSize: 14,
+        fontFamily: 'Arial'
+    });
+
+    const questionHeight = questionText.height || 25;
+
+    const choiceObjects = content.choices.map((choice, index) => {
+        return new fabric.Textbox(choice || '', {
+            left: 20,
+            top: questionHeight + 10 + (index * 30),
+            width: 280,
+            fontSize: 14,
+            fontFamily: 'Arial'
+        });
+    });
+
+    const elements = [questionText, ...choiceObjects];
+
+    if (content.type === 'matching' && content.answers) {
+        content.answers.forEach((answer, index) => {
+            const answerText = new fabric.Textbox(answer || '', {
+                left: 320,
+                top: questionHeight + 10 + (index * 30),
+                width: 280,
+                fontSize: 14,
+                fontFamily: 'Arial'
+            });
+            elements.push(answerText);
+        });
+    }
+
+    return new fabric.Group(elements, {
+        left: dropX,
+        top: dropY,
+        selectable: true
+    });
+};
+
+export const initializeCanvas = (canvasId, width, height, worksheetData) => {
+    const newCanvas = new fabric.Canvas(canvasId, {
+        width,
+        height,
+        backgroundColor: '#ffffff'
+    });
+
+    fabric.Object.prototype.set({
+        fill: '#000000',
+        fontFamily: 'Arial'
+    });
+
+    if (worksheetData?.state) {
+        newCanvas.loadFromJSON(worksheetData.state, () => {
+            newCanvas.renderAll();
+        });
+    }
+
+    return newCanvas;
+};
+
+export const generatePDF = async (canvas) => {
+    // Use standard US Letter size in mm
+    const PDF_WIDTH = 215.9;
+    const PDF_HEIGHT = 279.4;
+
+    const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [PDF_WIDTH, PDF_HEIGHT]
+    });
+
+    // Get high resolution canvas data
+    // Increase pixel density for better quality
+    const scaleFactor = 2;
+    const canvasImage = canvas.toDataURL({
+        format: 'png',
+        quality: 1,
+        multiplier: scaleFactor
+    });
+
+    // Add the image to PDF, scaling it to fit the page
+    // Subtract margins to ensure content fits
+    const margins = 10; // 10mm margins
+    pdf.addImage(
+        canvasImage,
+        'PNG',
+        margins,
+        margins,
+        PDF_WIDTH - (margins * 2),
+        PDF_HEIGHT - (margins * 2),
+        undefined,
+        'FAST'
+    );
+
+    return pdf;
+};
