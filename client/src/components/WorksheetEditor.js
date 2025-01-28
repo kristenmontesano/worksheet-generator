@@ -241,44 +241,69 @@ const WorksheetEditor = ({ worksheetData }) => {
     };
 
     const autoCreateLayout = () => {
-        if (!activeCanvas || !worksheetData) return;
+        if (!canvases || !worksheetData) return;
 
-        activeCanvas.clear();
-
+        // Clear both canvases
+        canvases.forEach(canvas => canvas.clear());
+        let currentCanvas = canvases[0];
+        
+        // Start with page 1
         addShape('Name & Date');
 
         const title = new fabric.Textbox(worksheetData.title || 'Worksheet', {
             left: 50,
             top: 100,
-            width: activeCanvas.width - 100,
+            width: currentCanvas.width - 100,
             fontSize: 24,
             fontFamily: 'Arial',
             fontWeight: 'bold',
             textAlign: 'center'
         });
-        activeCanvas.add(title);
+        currentCanvas.add(title);
 
         const parsedContent = parseContent(generatedContent);
         let currentTop = 160;
+        let currentPage = 0;
+
+        const checkAndSwitchPage = (requiredHeight) => {
+            // Check if content will overflow current page
+            if (currentTop + requiredHeight > currentCanvas.height - 50) { // 50px margin at bottom
+                if (currentPage < canvases.length - 1) {
+                    // Switch to next page
+                    currentPage++;
+                    currentCanvas = canvases[currentPage];
+                    currentTop = 50; // Reset to top of new page with margin
+                    return true;
+                }
+            }
+            return false;
+        };
 
         parsedContent.forEach((item) => {
+            let contentHeight = 0;
+            let elements = [];
+
             if (item.type === 'multiple-choice' || item.type === 'matching') {
+                // Calculate total height for multiple choice/matching question
                 const questionText = new fabric.Textbox(item.question, {
                     left: 50,
                     top: 0,
-                    width: activeCanvas.width - 100,
+                    width: currentCanvas.width - 100,
                     fontSize: 14,
                     fontFamily: 'Arial'
                 });
 
-                const elements = [questionText];
-                let currentHeight = questionText.height;
+                contentHeight = questionText.height + 10;
+                elements.push(questionText);
+
+                const choicesHeight = item.choices.length * 25;
+                contentHeight += choicesHeight;
 
                 item.choices.forEach((choice, idx) => {
                     const choiceText = new fabric.Textbox(choice, {
                         left: 70,
-                        top: currentHeight + (idx * 25),
-                        width: (activeCanvas.width - 100) / 2 - 20,
+                        top: questionText.height + 10 + (idx * 25),
+                        width: (currentCanvas.width - 100) / 2 - 20,
                         fontSize: 14,
                         fontFamily: 'Arial'
                     });
@@ -288,13 +313,23 @@ const WorksheetEditor = ({ worksheetData }) => {
                 if (item.type === 'matching' && item.answers) {
                     item.answers.forEach((answer, idx) => {
                         const answerText = new fabric.Textbox(answer, {
-                            left: activeCanvas.width / 2,
-                            top: questionText.height + (idx * 25),
-                            width: (activeCanvas.width - 100) / 2 - 20,
+                            left: currentCanvas.width / 2,
+                            top: questionText.height + 10 + (idx * 25),
+                            width: (currentCanvas.width - 100) / 2 - 20,
                             fontSize: 14,
                             fontFamily: 'Arial'
                         });
                         elements.push(answerText);
+                    });
+                }
+
+                contentHeight += 30; // Margin after question
+
+                // Check if we need to switch pages
+                if (checkAndSwitchPage(contentHeight)) {
+                    // Recalculate positions for new page
+                    elements.forEach(el => {
+                        el.set({ top: el.top + currentTop });
                     });
                 }
 
@@ -303,38 +338,48 @@ const WorksheetEditor = ({ worksheetData }) => {
                     top: currentTop
                 });
 
-                activeCanvas.add(group);
-                currentTop += group.height + 30;
+                currentCanvas.add(group);
+                currentTop += contentHeight;
 
             } else {
+                // Regular question
                 const text = new fabric.Textbox(item.content, {
                     left: 50,
                     top: currentTop,
-                    width: activeCanvas.width - 100,
+                    width: currentCanvas.width - 100,
                     fontSize: 14,
                     fontFamily: 'Arial'
                 });
-                activeCanvas.add(text);
-                currentTop += text.height + 15;
 
                 const isLongAnswer = item.content.toLowerCase().includes('long answer');
                 const boxHeight = isLongAnswer ? 120 : 90;
+                contentHeight = text.height + 15 + boxHeight + 30;
+
+                // Check if we need to switch pages
+                if (checkAndSwitchPage(contentHeight)) {
+                    // Add text to new page
+                    text.set({ top: currentTop });
+                }
+
+                currentCanvas.add(text);
+                currentTop += text.height + 15;
 
                 const answerBox = new fabric.Rect({
                     left: 50,
                     top: currentTop,
-                    width: activeCanvas.width - 100,
+                    width: currentCanvas.width - 100,
                     height: boxHeight,
                     fill: 'transparent',
                     stroke: '#000',
                     strokeWidth: 1
                 });
-                activeCanvas.add(answerBox);
+                currentCanvas.add(answerBox);
                 currentTop += boxHeight + 30;
             }
         });
 
-        activeCanvas.renderAll();
+        // Render both canvases
+        canvases.forEach(canvas => canvas.renderAll());
     };
 
     return (
