@@ -353,9 +353,9 @@ const WorksheetEditor = ({ worksheetData }) => {
         const dropX = e.clientX - rect.left;
         const dropY = e.clientY - rect.top;
 
-        if (content.type === 'multiple-choice') {
+        if (content.type === 'multiple-choice' || content.type === 'matching') {
             // Create group of text objects for question and choices
-            const questionText = new fabric.Textbox(content.question, {
+            const questionText = new fabric.Textbox(content.question || '', {
                 left: 0,
                 top: 0,
                 width: 300,
@@ -367,7 +367,7 @@ const WorksheetEditor = ({ worksheetData }) => {
             const questionHeight = questionText.height || 25;
 
             const choiceObjects = content.choices.map((choice, index) => {
-                return new fabric.Textbox(choice, {
+                return new fabric.Textbox(choice || '', {
                     left: 20, // Indent choices
                     top: questionHeight + 10 + (index * 30), // Add 10px padding after question
                     width: 280,
@@ -376,7 +376,23 @@ const WorksheetEditor = ({ worksheetData }) => {
                 });
             });
 
-            const group = new fabric.Group([questionText, ...choiceObjects], {
+            const elements = [questionText, ...choiceObjects];
+
+            // Add matching answers if they exist
+            if (content.type === 'matching' && content.answers) {
+                content.answers.forEach((answer, index) => {
+                    const answerText = new fabric.Textbox(answer || '', {
+                        left: 320, // Position answers to the right of choices
+                        top: questionHeight + 10 + (index * 30),
+                        width: 280,
+                        fontSize: 14,
+                        fontFamily: 'Arial'
+                    });
+                    elements.push(answerText);
+                });
+            }
+
+            const group = new fabric.Group(elements, {
                 left: dropX,
                 top: dropY,
                 selectable: true
@@ -386,7 +402,7 @@ const WorksheetEditor = ({ worksheetData }) => {
             canvas.setActiveObject(group);
         } else {
             // Handle regular text as before
-            const textbox = new fabric.Textbox(content.content, {
+            const textbox = new fabric.Textbox(content.content || '', {
                 left: dropX,
                 top: dropY,
                 width: 300,
