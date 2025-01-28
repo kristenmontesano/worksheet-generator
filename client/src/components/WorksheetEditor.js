@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fabric } from 'fabric';
 import './WorksheetEditor.css';
-import { FaHome, FaDownload } from 'react-icons/fa';
+import { FaHome, FaDownload, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { 
     TEMPLATE_ELEMENTS, 
     parseContent, 
@@ -13,59 +13,122 @@ import {
 } from '../utils/editorUtils';
 
 const WorksheetEditor = ({ worksheetData }) => {
-    const [canvas, setCanvas] = useState(null);
+    const [canvases, setCanvases] = useState([]);
+    const [activePageIndex, setActivePageIndex] = useState(0);
     const [activeTab, setActiveTab] = useState('layout');
     const [generatedContent, setGeneratedContent] = useState(worksheetData?.content || '');
 
     useEffect(() => {
-        const newCanvas = initializeCanvas('worksheet-canvas', 800, 1100, worksheetData);
+        // Initialize two canvases
+        const canvas1 = initializeCanvas('worksheet-canvas-1', 800, 1100, worksheetData);
+        const canvas2 = initializeCanvas('worksheet-canvas-2', 800, 1100, worksheetData);
+        
+        setCanvases([canvas1, canvas2]);
 
+        // Move keydown handler outside to avoid stale closure
+        return () => {
+            canvas1?.dispose();
+            canvas2?.dispose();
+        };
+    }, [worksheetData]);
+
+    // Add separate effect for keyboard events to avoid stale closure
+    useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.key === 'Backspace' && newCanvas.getActiveObject()) {
-                e.preventDefault();
-                const activeObjects = newCanvas.getActiveObjects();
-                activeObjects.forEach(obj => newCanvas.remove(obj));
-                newCanvas.discardActiveObject();
-                newCanvas.renderAll();
+            const activeCanvas = canvases[activePageIndex];
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                if (activeCanvas?.getActiveObject()) {
+                    e.preventDefault();
+                    const activeObjects = activeCanvas.getActiveObjects();
+                    activeObjects.forEach(obj => activeCanvas.remove(obj));
+                    activeCanvas.discardActiveObject();
+                    activeCanvas.renderAll();
+                }
             }
         };
 
         document.addEventListener('keydown', handleKeyDown);
-        setCanvas(newCanvas);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [canvases, activePageIndex]);
 
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-            newCanvas.dispose();
-        };
-    }, [worksheetData]);
+    // Add effect for canvas selection/dragging
+    useEffect(() => {
+        canvases.forEach(canvas => {
+            if (canvas) {
+                // Enable object selection and movement
+                canvas.selection = true;
+                canvas.on('object:moving', (e) => {
+                    const obj = e.target;
+                    // Optional: Add bounds checking if needed
+                    if (obj.left < 0) obj.left = 0;
+                    if (obj.top < 0) obj.top = 0;
+                    if (obj.left > canvas.width - obj.width * obj.scaleX) {
+                        obj.left = canvas.width - obj.width * obj.scaleX;
+                    }
+                    if (obj.top > canvas.height - obj.height * obj.scaleY) {
+                        obj.top = canvas.height - obj.height * obj.scaleY;
+                    }
+                });
+            }
+        });
+    }, [canvases]);
+
+    // Update the useEffect for page switching
+    useEffect(() => {
+        canvases.forEach((canvas, index) => {
+            if (!canvas) return;
+
+            if (index === activePageIndex) {
+                canvas.setZoom(1); // Reset zoom
+                canvas.selection = true;
+                canvas.interactive = true;
+                canvas.forEachObject(obj => {
+                    obj.selectable = true;
+                    obj.evented = true;
+                });
+                canvas.renderAll();
+                canvas.calcOffset(); // Recalculate offset after showing
+            } else {
+                canvas.selection = false;
+                canvas.interactive = false;
+                canvas.forEachObject(obj => {
+                    obj.selectable = false;
+                    obj.evented = false;
+                });
+                canvas.renderAll();
+            }
+        });
+    }, [canvases, activePageIndex]);
+
+    const activeCanvas = canvases[activePageIndex];
 
     const addText = () => {
-        if (!canvas) return;
+        if (!activeCanvas) return;
         const text = createTextbox({
             text: 'Click to edit text',
             width: 200,
             fontSize: 16
         });
-        canvas.add(text);
-        canvas.setActiveObject(text);
+        activeCanvas.add(text);
+        activeCanvas.setActiveObject(text);
     };
 
     const addSection = (sectionName) => {
-        if (!canvas) return;
+        if (!activeCanvas) return;
         const section = createTextbox({
             text: sectionName,
-            top: canvas.height / 2,
-            width: canvas.width - 100,
+            top: activeCanvas.height / 2,
+            width: activeCanvas.width - 100,
             fontSize: 18,
             fontWeight: 'bold',
             backgroundColor: '#f5f5f5',
             padding: 10
         });
-        canvas.add(section);
+        activeCanvas.add(section);
     };
 
     const handleCanvasDrop = (e) => {
-        if (!canvas) return;
+        if (!activeCanvas) return;
         
         const data = e.dataTransfer.getData('text');
         let content;
@@ -75,15 +138,15 @@ const WorksheetEditor = ({ worksheetData }) => {
             content = { type: 'text', content: data };
         }
         
-        const canvasEl = canvas.getElement();
+        const canvasEl = activeCanvas.getElement();
         const rect = canvasEl.getBoundingClientRect();
         const dropX = e.clientX - rect.left;
         const dropY = e.clientY - rect.top;
 
         if (content.type === 'multiple-choice' || content.type === 'matching') {
             const group = createMultipleChoiceGroup(content, dropX, dropY);
-            canvas.add(group);
-            canvas.setActiveObject(group);
+            activeCanvas.add(group);
+            activeCanvas.setActiveObject(group);
         } else {
             const textbox = createTextbox({
                 text: content.content || '',
@@ -91,21 +154,19 @@ const WorksheetEditor = ({ worksheetData }) => {
                 top: dropY,
                 width: 300
             });
-            canvas.add(textbox);
-            canvas.setActiveObject(textbox);
+            activeCanvas.add(textbox);
+            activeCanvas.setActiveObject(textbox);
         }
         
-        canvas.renderAll();
+        activeCanvas.renderAll();
     };
 
     const handleHomeClick = () => window.location.href = '/';
 
     const handleDownloadPDF = async () => {
-        if (!canvas) return;
+        if (canvases.length === 0) return;
         try {
-            canvas.discardActiveObject();
-            canvas.renderAll();
-            const pdf = await generatePDF(canvas);
+            const pdf = await generatePDF(canvases);
             pdf.save('worksheet.pdf');
         } catch (error) {
             console.error('Error generating PDF:', error);
@@ -113,11 +174,11 @@ const WorksheetEditor = ({ worksheetData }) => {
     };
 
     const addShape = (shapeName) => {
-        if (!canvas) return;
-        const shape = createShape(shapeName, canvas);
+        if (!activeCanvas) return;
+        const shape = createShape(shapeName, activeCanvas);
         if (shape) {
-            canvas.add(shape);
-            canvas.setActiveObject(shape);
+            activeCanvas.add(shape);
+            activeCanvas.setActiveObject(shape);
         }
     };
 
@@ -180,22 +241,22 @@ const WorksheetEditor = ({ worksheetData }) => {
     };
 
     const autoCreateLayout = () => {
-        if (!canvas || !worksheetData) return;
+        if (!activeCanvas || !worksheetData) return;
 
-        canvas.clear();
+        activeCanvas.clear();
 
         addShape('Name & Date');
 
         const title = new fabric.Textbox(worksheetData.title || 'Worksheet', {
             left: 50,
             top: 100,
-            width: canvas.width - 100,
+            width: activeCanvas.width - 100,
             fontSize: 24,
             fontFamily: 'Arial',
             fontWeight: 'bold',
             textAlign: 'center'
         });
-        canvas.add(title);
+        activeCanvas.add(title);
 
         const parsedContent = parseContent(generatedContent);
         let currentTop = 160;
@@ -205,7 +266,7 @@ const WorksheetEditor = ({ worksheetData }) => {
                 const questionText = new fabric.Textbox(item.question, {
                     left: 50,
                     top: 0,
-                    width: canvas.width - 100,
+                    width: activeCanvas.width - 100,
                     fontSize: 14,
                     fontFamily: 'Arial'
                 });
@@ -217,7 +278,7 @@ const WorksheetEditor = ({ worksheetData }) => {
                     const choiceText = new fabric.Textbox(choice, {
                         left: 70,
                         top: currentHeight + (idx * 25),
-                        width: (canvas.width - 100) / 2 - 20,
+                        width: (activeCanvas.width - 100) / 2 - 20,
                         fontSize: 14,
                         fontFamily: 'Arial'
                     });
@@ -227,9 +288,9 @@ const WorksheetEditor = ({ worksheetData }) => {
                 if (item.type === 'matching' && item.answers) {
                     item.answers.forEach((answer, idx) => {
                         const answerText = new fabric.Textbox(answer, {
-                            left: canvas.width / 2,
+                            left: activeCanvas.width / 2,
                             top: questionText.height + (idx * 25),
-                            width: (canvas.width - 100) / 2 - 20,
+                            width: (activeCanvas.width - 100) / 2 - 20,
                             fontSize: 14,
                             fontFamily: 'Arial'
                         });
@@ -242,18 +303,18 @@ const WorksheetEditor = ({ worksheetData }) => {
                     top: currentTop
                 });
 
-                canvas.add(group);
+                activeCanvas.add(group);
                 currentTop += group.height + 30;
 
             } else {
                 const text = new fabric.Textbox(item.content, {
                     left: 50,
                     top: currentTop,
-                    width: canvas.width - 100,
+                    width: activeCanvas.width - 100,
                     fontSize: 14,
                     fontFamily: 'Arial'
                 });
-                canvas.add(text);
+                activeCanvas.add(text);
                 currentTop += text.height + 15;
 
                 const isLongAnswer = item.content.toLowerCase().includes('long answer');
@@ -262,18 +323,18 @@ const WorksheetEditor = ({ worksheetData }) => {
                 const answerBox = new fabric.Rect({
                     left: 50,
                     top: currentTop,
-                    width: canvas.width - 100,
+                    width: activeCanvas.width - 100,
                     height: boxHeight,
                     fill: 'transparent',
                     stroke: '#000',
                     strokeWidth: 1
                 });
-                canvas.add(answerBox);
+                activeCanvas.add(answerBox);
                 currentTop += boxHeight + 30;
             }
         });
 
-        canvas.renderAll();
+        activeCanvas.renderAll();
     };
 
     return (
@@ -353,6 +414,33 @@ const WorksheetEditor = ({ worksheetData }) => {
                     >
                         <FaHome />
                     </button>
+                    <div className="page-controls">
+                        <button 
+                            onClick={() => {
+                                const prevCanvas = canvases[activePageIndex];
+                                prevCanvas?.discardActiveObject();
+                                prevCanvas?.renderAll();
+                                setActivePageIndex(0);
+                            }}
+                            className={activePageIndex === 0 ? 'active' : ''}
+                            disabled={activePageIndex === 0}
+                        >
+                            <FaChevronLeft />
+                        </button>
+                        <span>Page {activePageIndex + 1} of {canvases.length}</span>
+                        <button 
+                            onClick={() => {
+                                const prevCanvas = canvases[activePageIndex];
+                                prevCanvas?.discardActiveObject();
+                                prevCanvas?.renderAll();
+                                setActivePageIndex(1);
+                            }}
+                            className={activePageIndex === 1 ? 'active' : ''}
+                            disabled={activePageIndex === 1}
+                        >
+                            <FaChevronRight />
+                        </button>
+                    </div>
                     <button 
                         className="download-button"
                         onClick={handleDownloadPDF}
@@ -362,7 +450,12 @@ const WorksheetEditor = ({ worksheetData }) => {
                     </button>
                 </div>
                 <div className="canvas-container">
-                    <canvas id="worksheet-canvas" />
+                    <div style={{ display: activePageIndex === 0 ? 'block' : 'none' }}>
+                        <canvas id="worksheet-canvas-1" />
+                    </div>
+                    <div style={{ display: activePageIndex === 1 ? 'block' : 'none' }}>
+                        <canvas id="worksheet-canvas-2" />
+                    </div>
                 </div>
             </div>
         </div>

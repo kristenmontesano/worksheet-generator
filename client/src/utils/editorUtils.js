@@ -326,12 +326,24 @@ export const initializeCanvas = (canvasId, width, height, worksheetData) => {
     const newCanvas = new fabric.Canvas(canvasId, {
         width,
         height,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        selection: true,
+        preserveObjectStacking: true,
+        interactive: true
     });
 
     fabric.Object.prototype.set({
         fill: '#000000',
-        fontFamily: 'Arial'
+        fontFamily: 'Arial',
+        cornerSize: 8,
+        transparentCorners: false,
+        cornerColor: '#007bff',
+        borderColor: '#007bff',
+        cornerStyle: 'circle',
+        padding: 5,
+        selectable: true,
+        hasControls: true,
+        hasBorders: true
     });
 
     if (worksheetData?.state) {
@@ -343,8 +355,7 @@ export const initializeCanvas = (canvasId, width, height, worksheetData) => {
     return newCanvas;
 };
 
-export const generatePDF = async (canvas) => {
-    // Use standard US Letter size in mm
+export const generatePDF = async (canvases) => {
     const PDF_WIDTH = 215.9;
     const PDF_HEIGHT = 279.4;
 
@@ -354,28 +365,33 @@ export const generatePDF = async (canvas) => {
         format: [PDF_WIDTH, PDF_HEIGHT]
     });
 
-    // Get high resolution canvas data
-    // Increase pixel density for better quality
+    const margins = 10;
     const scaleFactor = 2;
-    const canvasImage = canvas.toDataURL({
-        format: 'png',
-        quality: 1,
-        multiplier: scaleFactor
-    });
 
-    // Add the image to PDF, scaling it to fit the page
-    // Subtract margins to ensure content fits
-    const margins = 10; // 10mm margins
-    pdf.addImage(
-        canvasImage,
-        'PNG',
-        margins,
-        margins,
-        PDF_WIDTH - (margins * 2),
-        PDF_HEIGHT - (margins * 2),
-        undefined,
-        'FAST'
-    );
+    // Add each canvas as a new page
+    for (let i = 0; i < canvases.length; i++) {
+        if (i > 0) {
+            pdf.addPage();
+        }
+
+        const canvas = canvases[i];
+        const canvasImage = canvas.toDataURL({
+            format: 'png',
+            quality: 1,
+            multiplier: scaleFactor
+        });
+
+        pdf.addImage(
+            canvasImage,
+            'PNG',
+            margins,
+            margins,
+            PDF_WIDTH - (margins * 2),
+            PDF_HEIGHT - (margins * 2),
+            undefined,
+            'FAST'
+        );
+    }
 
     return pdf;
 };
