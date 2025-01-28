@@ -4,30 +4,7 @@ import './WorksheetEditor.css';
 import { FaHome, FaDownload } from 'react-icons/fa';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-
-const TEMPLATE_ELEMENTS = {
-    headers: [
-        { name: 'Classic Header', height: 80 },
-        { name: 'Modern Header', height: 60 },
-    ],
-    sections: [
-        { name: 'Learning Objectives' },
-        { name: 'Warm-up Questions' },
-        { name: 'Main Exercises' },
-        { name: 'Challenge Question' }
-    ],
-    shapes: [
-        { name: 'Answer Box' },
-        { name: 'Number Line' },
-        { name: 'Grid' },
-        { name: 'Circle' },
-        { name: 'Answer Lines' },
-        { name: 'Name & Date' }
-    ],
-    buttons: [
-        { name: 'Auto-create Layout' }
-    ]
-};
+import { TEMPLATE_ELEMENTS, parseContent, createShape, createTextbox } from '../utils/editorUtils';
 
 const WorksheetEditor = ({ worksheetData }) => {
     const [canvas, setCanvas] = useState(null);
@@ -79,14 +56,10 @@ const WorksheetEditor = ({ worksheetData }) => {
 
     const addText = () => {
         if (!canvas) return;
-        const text = new fabric.Textbox('Click to edit text', {
-            left: 50,
-            top: 50,
+        const text = createTextbox({
+            text: 'Click to edit text',
             width: 200,
-            fontSize: 16,
-            fontFamily: 'Arial',
-            fill: '#000000',
-            backgroundColor: 'transparent'
+            fontSize: 16
         });
         canvas.add(text);
         canvas.setActiveObject(text);
@@ -94,14 +67,12 @@ const WorksheetEditor = ({ worksheetData }) => {
 
     const addSection = (sectionName) => {
         if (!canvas) return;
-        const section = new fabric.Textbox(sectionName, {
-            left: 50,
+        const section = createTextbox({
+            text: sectionName,
             top: canvas.height / 2,
             width: canvas.width - 100,
             fontSize: 18,
-            fontFamily: 'Arial',
             fontWeight: 'bold',
-            fill: '#000000',
             backgroundColor: '#f5f5f5',
             padding: 10
         });
@@ -110,245 +81,11 @@ const WorksheetEditor = ({ worksheetData }) => {
 
     const addShape = (shapeName) => {
         if (!canvas) return;
-        let shape;
-        switch (shapeName) {
-            case 'Answer Box':
-                shape = new fabric.Rect({
-                    left: 50,
-                    top: 50,
-                    width: 200,
-                    height: 50,
-                    fill: 'transparent',
-                    stroke: '#000',
-                    strokeWidth: 1
-                });
-                break;
-            case 'Grid':
-                // Create a group to hold all grid lines
-                const gridSize = 20; // Size of each grid cell
-                const gridWidth = 200;
-                const gridHeight = 200;
-                const gridLines = [];
-
-                // Create vertical lines
-                for (let i = 0; i <= gridWidth; i += gridSize) {
-                    gridLines.push(new fabric.Line([i, 0, i, gridHeight], {
-                        stroke: '#ccc',
-                        strokeWidth: 1
-                    }));
-                }
-
-                // Create horizontal lines
-                for (let i = 0; i <= gridHeight; i += gridSize) {
-                    gridLines.push(new fabric.Line([0, i, gridWidth, i], {
-                        stroke: '#ccc',
-                        strokeWidth: 1
-                    }));
-                }
-
-                shape = new fabric.Group(gridLines, {
-                    left: 50,
-                    top: 50,
-                    selectable: true
-                });
-                break;
-            case 'Number Line':
-                const lineLength = 300;
-                const tickSpacing = 30;
-                const tickHeight = 10;
-                const numberLine = [];
-
-                // Main horizontal line
-                numberLine.push(new fabric.Line([0, 0, lineLength, 0], {
-                    stroke: '#000',
-                    strokeWidth: 2
-                }));
-
-                // Add ticks and numbers
-                for (let i = 0; i <= lineLength; i += tickSpacing) {
-                    // Tick mark
-                    numberLine.push(new fabric.Line([i, -tickHeight/2, i, tickHeight/2], {
-                        stroke: '#000',
-                        strokeWidth: 1
-                    }));
-                    
-                    // Number label
-                    numberLine.push(new fabric.Text((i/tickSpacing).toString(), {
-                        left: i - 3,
-                        top: tickHeight,
-                        fontSize: 12,
-                        fontFamily: 'Arial'
-                    }));
-                }
-
-                shape = new fabric.Group(numberLine, {
-                    left: 50,
-                    top: 50,
-                    selectable: true
-                });
-                break;
-            case 'Circle':
-                shape = new fabric.Circle({
-                    left: 50,
-                    top: 50,
-                    radius: 50,
-                    fill: 'transparent',
-                    stroke: '#000',
-                    strokeWidth: 1
-                });
-                break;
-            case 'Answer Lines':
-                const lineSpacing = 30; // Space between lines
-                const lineWidth = 300;  // Width of each line
-                const numLines = 4;     // Number of lines to create
-                const answerLines = [];
-
-                // Create multiple horizontal lines
-                for (let i = 0; i < numLines; i++) {
-                    answerLines.push(new fabric.Line([
-                        0,
-                        i * lineSpacing,
-                        lineWidth,
-                        i * lineSpacing
-                    ], {
-                        stroke: '#000',
-                        strokeWidth: 1
-                    }));
-                }
-
-                shape = new fabric.Group(answerLines, {
-                    left: 50,
-                    top: 50,
-                    selectable: true
-                });
-                break;
-            case 'Name & Date':
-                const nameText = new fabric.Text('Name:', {
-                    left: 0,
-                    top: 0,
-                    fontSize: 14,
-                    fontFamily: 'Arial'
-                });
-
-                const nameLine = new fabric.Line([
-                    nameText.width + 10, 
-                    nameText.height - 5,
-                    nameText.width + 300,
-                    nameText.height - 5
-                ], {
-                    stroke: '#000',
-                    strokeWidth: 1
-                });
-
-                const dateText = new fabric.Text('Date:', {
-                    left: nameText.width + 330,
-                    top: 0,
-                    fontSize: 14,
-                    fontFamily: 'Arial'
-                });
-
-                const dateLine = new fabric.Line([
-                    nameText.width + dateText.width + 340,
-                    nameText.height - 5,
-                    nameText.width + dateText.width + 550,
-                    nameText.height - 5
-                ], {
-                    stroke: '#000',
-                    strokeWidth: 1
-                });
-
-                shape = new fabric.Group([nameText, nameLine, dateText, dateLine], {
-                    left: 50,
-                    top: 50,
-                    selectable: true
-                });
-                break;
-            default:
-                return;
-        }
+        const shape = createShape(shapeName, canvas);
         if (shape) {
             canvas.add(shape);
             canvas.setActiveObject(shape);
         }
-    };
-
-    // Replace the parseContent function
-    const parseContent = (content) => {
-        const lines = content.split('\n').filter(line => line.trim());
-        const parsedContent = [];
-        let currentQuestion = null;
-
-        lines.forEach(line => {
-            const trimmedLine = line.trim();
-            
-            // Match numbered questions and their types
-            const questionMatch = trimmedLine.match(/^\d+\.\s*(.*?)$/i);
-            const isLetterOption = trimmedLine.match(/^[a-d]\.\s+\w+/i);
-            const isMatchingAnswer = trimmedLine.match(/^[A-D]{2}\.\s+\w+/);
-            
-            if (questionMatch) {
-                // If there was a previous question, add it
-                if (currentQuestion) {
-                    parsedContent.push(currentQuestion);
-                    currentQuestion = null;
-                }
-                
-                const questionText = questionMatch[1].trim();
-                
-                // Check if this is a multiple choice or matching question
-                if (questionText.toLowerCase().includes('multiple choice') || 
-                    questionText.toLowerCase().includes('matching')) {
-                    // Start a new grouped question
-                    currentQuestion = {
-                        type: questionText.toLowerCase().includes('matching') ? 'matching' : 'multiple-choice',
-                        question: trimmedLine,
-                        choices: [],
-                        answers: []
-                    };
-                } else {
-                    // Regular question
-                    currentQuestion = {
-                        type: 'text',
-                        content: trimmedLine
-                    };
-                }
-            } else if (isLetterOption && currentQuestion) {
-                // Add choice to current multiple choice or matching question
-                currentQuestion.choices.push(trimmedLine);
-            } else if (isMatchingAnswer && currentQuestion?.type === 'matching') {
-                // Add matching answer (AA., BB., etc.)
-                currentQuestion.answers.push(trimmedLine);
-            } else if (trimmedLine) {
-                // If there's a current question and this line isn't a choice/answer,
-                // append it to the question content
-                if (currentQuestion) {
-                    if (currentQuestion.type === 'text') {
-                        // For regular questions, combine with ": " if it's just the question type
-                        if (currentQuestion.content.toLowerCase().match(/(multiple choice|matching|short answer|long answer|challenge question)$/i)) {
-                            currentQuestion.content += ': ' + trimmedLine;
-                        } else if (!currentQuestion.content.includes('\n')) {
-                            currentQuestion.content += '\n' + trimmedLine;
-                        }
-                    } else if (!currentQuestion.question.includes('\n')) {
-                        // For multiple choice/matching, add as new line to question
-                        currentQuestion.question += '\n' + trimmedLine;
-                    }
-                } else {
-                    // If no current question, create new text content
-                    parsedContent.push({
-                        type: 'text',
-                        content: trimmedLine
-                    });
-                }
-            }
-        });
-
-        // Add the last question if exists
-        if (currentQuestion) {
-            parsedContent.push(currentQuestion);
-        }
-
-        return parsedContent;
     };
 
     // Modify the handleCanvasDrop function to handle multiple choice questions
